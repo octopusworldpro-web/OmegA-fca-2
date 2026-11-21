@@ -107,6 +107,7 @@ function createClient({ authenticate, options = {}, reconnect = {}, license = {}
     }
 
     let lastConnectError = null;
+    const autoReconnect = loginOptions?.autoReconnect ?? reconnect.autoReconnect ?? true;
     supervisor = new ConnectionSupervisor({
       connect: async context => {
         let result;
@@ -167,9 +168,11 @@ function createClient({ authenticate, options = {}, reconnect = {}, license = {}
         if (typeof driver.disconnect === "function") await driver.disconnect();
       },
       // Classic FCA-compatible behavior: reconnect unless explicitly disabled.
-      options: loginOptions?.autoReconnect === false
-        ? { ...reconnect, maxAttempts: 1 }
-        : reconnect
+      options: {
+        ...reconnect,
+        autoReconnect,
+        ...(autoReconnect === false ? { maxAttempts: 1 } : {})
+      }
     });
     const driver = await supervisor.start();
     if (!driver) throw lastConnectError || new Error("Connection stopped before authentication completed");

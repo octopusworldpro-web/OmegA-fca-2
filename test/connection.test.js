@@ -79,3 +79,34 @@ test("does not retry permanent authentication failures", async () => {
   assert.equal(attempts, 1);
   assert.equal(supervisor.snapshot().state, "failed");
 });
+
+
+test("autoReconnect false disposes a failed listener without opening another connection", async () => {
+  let connects = 0;
+  let callback;
+  let disconnects = 0;
+  const supervisor = new ConnectionSupervisor({
+    connect: async () => {
+      connects++;
+      return {
+        listen(fn) { callback = fn; return () => {}; },
+        disconnect: async () => { disconnects++; }
+      };
+    },
+    options: { autoReconnect: false }
+  });
+  await supervisor.start();
+  supervisor.listen(() => {});
+  callback(new Error("synthetic socket failure"));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(connects, 1);
+  assert.equal(disconnects, 1);
+  assert.equal(supervisor.snapshot().state, "disconnected");
+  await supervisor.stop();
+});
+
+test("connection supervisor validates autoReconnect option type", () => {
+  assert.throws(() => new ConnectionSupervisor({
+    connect: async () => ({}), options: { autoReconnect: "false" }
+  }), /Invalid connection retry options/);
+});
