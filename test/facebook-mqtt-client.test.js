@@ -120,3 +120,18 @@ test("forwards login-time listener options into the native MQTT driver", async (
   detach();
   await client.logout();
 });
+
+
+test("first-party client accepts Cookie-header login through the native session bootstrap", async () => {
+  const client = createFacebookMqttClient({
+    socketFactory: () => new FakeSocket(),
+    fetchImpl: async () => response(),
+    mqtt: { keepAlive: 0 }
+  });
+  const api = await client.login({
+    mode: "cookie",
+    cookie: "c_user=123456789012345; xs=synthetic-session"
+  });
+  assert.equal(api.getCurrentUserID(), "123456789012345");
+  await client.logout();
+});

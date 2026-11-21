@@ -70,11 +70,12 @@ function createFacebookMqttClient(options = {}) {
     requireLicense,
     onLicenseError,
     authenticate: ({ mode, credentials, options: loginOptions }) => {
-      if (mode !== "appstate" && mode !== "session") {
-        throw new TypeError("Native Messenger client supports AppState or encrypted SessionGuard login");
+      if (mode !== "appstate" && mode !== "cookie" && mode !== "session") {
+        throw new TypeError("Native Messenger client supports AppState, Cookie, or encrypted SessionGuard login");
       }
+      // Both AppState and Cookie-header modes are normalized to validated cookies.
       return createFacebookMqttDriver({
-        appState: mode === "appstate" ? credentials : undefined,
+        appState: mode === "appstate" || mode === "cookie" ? credentials : undefined,
         options: {
           ...(e2eeStorageKey === undefined ? {} : { e2eeStorageKey }),
           ...(e2eeDevicePath === undefined ? {} : { e2eeDevicePath }),

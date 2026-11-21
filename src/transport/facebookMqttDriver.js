@@ -73,7 +73,8 @@ async function createFacebookMqttDriver({
     logLevel: loginOptions.logLevel || "warn",
     selfListen: loginOptions.selfListen === true,
     selfListenEvent: loginOptions.selfListenEvent === true,
-    listenEvents: loginOptions.listenEvents === true,
+    // Match the EryXen/legacy FCA default for non-self thread and group events.
+    listenEvents: loginOptions.listenEvents === undefined ? true : loginOptions.listenEvents === true,
     listenTyping: loginOptions.listenTyping === true,
     updatePresence: loginOptions.updatePresence === true,
     autoMarkDelivery: loginOptions.autoMarkDelivery === true,

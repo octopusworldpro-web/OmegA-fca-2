@@ -31,6 +31,10 @@ function createGoatBotLogin(client, accountConfigOptions = {}) {
       loginInput = { mode: "session" };
     } else if (Array.isArray(input.appState)) {
       loginInput = { mode: "appstate", appState: input.appState };
+    } else if (typeof input.cookie === "string" && input.cookie.trim()) {
+      loginInput = { mode: "cookie", cookie: input.cookie };
+    } else if (typeof input.cookies === "string" && input.cookies.trim()) {
+      loginInput = { mode: "cookie", cookie: input.cookies };
     } else if ((typeof input.username === "string" || typeof input.email === "string") &&
         typeof (input.password || input.pass) === "string") {
       loginInput = {

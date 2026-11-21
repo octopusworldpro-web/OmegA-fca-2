@@ -89,6 +89,9 @@ function createClient({ authenticate, options = {}, reconnect = {}, license = {}
       supervisor = null;
     }
     await checkLicense();
+    if (loginOptions?.autoReconnect !== undefined && typeof loginOptions.autoReconnect !== "boolean") {
+      throw new TypeError("autoReconnect must be a boolean");
+    }
     const mode = credentials.mode;
     let normalized;
     if (mode === "appstate") {
@@ -163,7 +166,10 @@ function createClient({ authenticate, options = {}, reconnect = {}, license = {}
       disconnect: async driver => {
         if (typeof driver.disconnect === "function") await driver.disconnect();
       },
-      options: reconnect
+      // Classic FCA-compatible behavior: reconnect unless explicitly disabled.
+      options: loginOptions?.autoReconnect === false
+        ? { ...reconnect, maxAttempts: 1 }
+        : reconnect
     });
     const driver = await supervisor.start();
     if (!driver) throw lastConnectError || new Error("Connection stopped before authentication completed");
