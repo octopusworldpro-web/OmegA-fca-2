@@ -93,6 +93,7 @@ test("autoReconnect false disposes a failed listener without opening another con
         disconnect: async () => { disconnects++; }
       };
     },
+    disconnect: async driver => driver.disconnect(),
     options: { autoReconnect: false }
   });
   await supervisor.start();
