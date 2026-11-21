@@ -1,32 +1,32 @@
-# Compatibility Research Notes
+# FCA Compatibility Research Notes
 
-This document records an API/behavioral compatibility target from the publicly documented `@eryxenx/fca` package README and npm API reference. It is a requirements map only: no source code, implementation, binary, or runtime dependency is taken from that package.
+This document records OmegA-FCA's independently maintained compatibility requirements. It is a requirements map, not a claim that every method or Facebook protocol flow is implemented.
 
 ## Security review
 
-- Do not install or execute the reference package as part of OmegA-FCA development.
-- A public security report flags credential-exfiltration behavior in certain historical package versions. Treat the package and all versions as untrusted; never provide it with Facebook passwords, 2FA secrets, cookies, or AppState.
-- OmegA-FCA authentication must send credentials only to the intended Facebook endpoints after protocol review. No third-party credential relay, telemetry, or remote login helper.
+- Keep authentication, session state, and all outbound requests inside the first-party OmegA-FCA implementation.
+- Never relay Facebook passwords, 2FA secrets, cookies, or AppState to an unrelated service.
 - Build tests with synthetic fixtures and sanitized protocol observations only.
+- Keep checkpoint and challenge completion manual and account-owner controlled.
 
-## Compatibility surface to implement independently
+## Compatibility surface
 
 ### Login and lifecycle
-- Callback-style login compatible with the existing GoatBot expectation.
+- Callback-style login compatible with the consuming bot's expectations.
 - AppState/cookie session input.
-- Email/password login only if a safe, independently verified Facebook flow is available.
+- Credential login only if a safe, independently verified platform flow is available.
 - Explicit manual 2FA/checkpoint outcomes; no security bypass.
-- Options documented by the reference include `selfListen`, `listenEvents`, `listenTyping`, `updatePresence`, `autoMarkDelivery`, `autoMarkRead`, `autoReconnect`, `online`, `emitReady`, `proxy`, and `userAgent`.
+- Validate listener options and reject unsupported settings explicitly.
 
 ### Messaging
-- `sendMessage`, including body, attachment, mentions, sticker, and location payloads.
-- `editMessage`, `unsendMessage`, `deleteMessage`, `getMessage`, `forwardAttachment`, and `uploadAttachment`.
+- sendMessage, including supported body, attachment, mentions, sticker, and location payloads.
+- editMessage, unsendMessage, deleteMessage, getMessage, forwardAttachment, and uploadAttachment.
 - Read/delivery receipts and typing indicator methods.
-- Media helpers and link/contact sharing are later compatibility targets.
+- Media helpers and link/contact sharing as separately verified capabilities.
 
 ### Events and connection
-- `listen` / `listenMqtt` callback contract.
-- Stable reconnect with bounded backoff and jitter, subscription readiness, stale-client guard, and one active listener.
+- listen/listenMqtt callback contract.
+- Stable reconnect with bounded backoff, subscription readiness, stale-client guard, and one active listener.
 - Normalize incoming message, thread, typing, presence, and receipt events into documented event shapes.
 - Preserve event ordering per thread and suppress bounded duplicate deliveries.
 
@@ -49,7 +49,7 @@ This document records an API/behavioral compatibility target from the publicly d
 - Verify manifest signature, package digest, supported runtime, and release channel before applying.
 - Support stable/beta channels, changelog display, staged rollout, backup, health check, and rollback.
 - Auto-update must be configurable; never update while a live session is mid-operation.
-- Never execute unsigned remote scripts or fetch update code from the reference package.
+- Never execute unsigned remote scripts or fetch update code from an unrelated package.
 
 ## Implementation status
 

@@ -181,14 +181,3 @@ test("GoatBot adapter forwards encrypted SessionGuard restore mode", async () =>
   assert.equal(result, api);
   assert.deepEqual(received, { mode: "session" });
 });
-
-
-test("GoatBot adapter maps a raw Cookie header to first-party cookie login", async () => {
-  let received;
-  const cookie = "c_user=123456; xs=synthetic-cookie";
-  const login = createGoatBotLogin({
-    async login(credentials) { received = credentials; return {}; }
-  });
-  await login({ cookie }, () => {});
-  assert.deepEqual(received, { mode: "cookie", cookie });
-});

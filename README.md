@@ -1,12 +1,62 @@
-# OmegA Bot — OmegA-FCA
+<div align="center">
 
-**An experimental, AppState-first personal Messenger client and FCA compatibility layer by NirZon.**
+<a href="https://github.com/nirzon-islam/OmegA-FCA">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:071426,35:123B67,70:5B2D91,100:00BFA6&height=230&section=header&text=OmegA-FCA&fontSize=64&fontColor=ffffff&fontAlignY=38&desc=Messenger%20Client%20%7C%20FCA%20Compatibility%20Layer&descAlignY=59&descSize=17&animation=fadeIn" alt="OmegA-FCA animated header" width="100%" />
+</a>
 
-OmegA-FCA is the Facebook integration library maintained under the **OmegA Bot** brand by **NirZon**.
+### ⚡ A modern, AppState-first Messenger client & FCA compatibility layer
 
- > **Status:** experimental native personal-account path. AppState session validation, MQTT/WebSocket bootstrap, a limited event normalizer, a limited action set, and GoatBot callback compatibility are implemented with synthetic tests. This is not yet a verified drop-in FCA replacement: live Facebook broker acceptance, complete event/action parity, and authorized-account end-to-end tests remain outstanding.
+**Built with care by [NirZon](https://github.com/nirzon-islam) · Part of the OmegA Bot ecosystem**
 
-**Package:** `@nirzon-islam/omega-fca` · **Node.js:** 20+ · **Author:** NirZon
+<p>
+  <img src="https://img.shields.io/badge/Status-Experimental-orange?style=for-the-badge&logo=github" alt="Experimental status" />
+  <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js 20+" />
+  <img src="https://img.shields.io/badge/License-MIT-7c3aed?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="MIT License" />
+</p>
+<p>
+  <a href="https://github.com/nirzon-islam/OmegA-FCA"><img src="https://img.shields.io/github/stars/nirzon-islam/OmegA-FCA?style=flat-square&color=f5a623&label=Stars" alt="GitHub stars" /></a>
+  <a href="https://github.com/nirzon-islam/OmegA-FCA/commits/main"><img src="https://img.shields.io/github/last-commit/nirzon-islam/OmegA-FCA?style=flat-square&color=0ea5e9" alt="Last commit" /></a>
+  <a href="https://github.com/nirzon-islam/OmegA-FCA/actions"><img src="https://img.shields.io/github/actions/workflow/status/nirzon-islam/OmegA-FCA/ci.yml?branch=main&style=flat-square&label=CI" alt="CI status" /></a>
+</p>
+
+[Features](#included) · [Quick Start](#appstate-first-test-run) · [Documentation](#documentation) · [Security](#security) · [Development](#development)
+
+</div>
+
+---
+
+> [!IMPORTANT]
+> **Experimental — not a verified drop-in FCA replacement.** AppState session validation, MQTT/WebSocket bootstrap, a limited event normalizer, a limited action set, and GoatBot callback compatibility are implemented with synthetic tests. Live Facebook broker acceptance, complete event/action parity, and authorized-account end-to-end tests remain outstanding.
+
+<div align="center">
+
+| Package | Runtime | Maintainer |
+|:---:|:---:|:---:|
+| `@nirzon-islam/omega-fca` | **Node.js 20+** | **NirZon** |
+
+</div>
+
+## ✨ Project overview
+
+OmegA-FCA is the Facebook integration library maintained under the **OmegA Bot** brand by **NirZon**. It brings together an AppState-first personal Messenger session foundation, experimental MQTT transport, FCA-style APIs, and GoatBot compatibility utilities.
+
+### 🧭 Documentation
+
+| Guide | What you'll find |
+|---|---|
+| [Architecture](docs/ARCHITECTURE.md) | Project structure and system design |
+| [Implementation status](docs/IMPLEMENTATION-STATUS.md) | Implemented features and remaining work |
+| [GoatBot compatibility](docs/GOATBOT-COMPATIBILITY-MATRIX.md) | Compatibility notes and known gaps |
+| [NTKhang architecture study](docs/NTKHANG-REFERENCE-STUDY.md) | Independent architecture and compatibility study |
+| [Deployment](docs/DEPLOYMENT.md) | Setup and test instructions |
+| [E2EE](docs/E2EE.md) | Experimental encrypted messaging notes |
+| [TypeScript](docs/TYPESCRIPT.md) | Types and package exports |
+
+> **Quick install**
+> ```bash
+> npm install @nirzon-islam/omega-fca
+> ```
+
 
 ## Included
 
@@ -63,7 +113,7 @@ This is a session foundation only: it does not yet provide the full FCA action A
 
 ## Experimental Messenger MQTT transport
 
-`createFacebookMqttClient()` provides the first-party AppState and optional encrypted-session restore path: it validates the supplied session, opens the native WebSocket/MQTT transport, subscribes and initializes sync, and exposes a GoatBot-style callback listener. Known Messenger delta classes are normalized conservatively; unknown classes remain explicit. A limited set of web/thread and MQTT actions is available, but this is not full FCA parity. The private broker protocol, delta schemas, and action payloads are unofficial and have not been validated against a live Facebook account. See [Facebook MQTT transport notes](docs/FACEBOOK-MQTT-TRANSPORT.md), [implementation status](docs/IMPLEMENTATION-STATUS.md), and the [Eryxen API parity/security audit](docs/ERYXEN-REFERENCE-AUDIT.md).
+`createFacebookMqttClient()` provides the first-party AppState and optional encrypted-session restore path: it validates the supplied session, opens the native WebSocket/MQTT transport, subscribes and initializes sync, and exposes a GoatBot-style callback listener. Known Messenger delta classes are normalized conservatively; unknown classes remain explicit. A limited set of web/thread and MQTT actions is available, but this is not full FCA parity. The private broker protocol, delta schemas, and action payloads are unofficial and have not been validated against a live Facebook account. See [Facebook MQTT transport notes](docs/FACEBOOK-MQTT-TRANSPORT.md), [implementation status](docs/IMPLEMENTATION-STATUS.md), and the [NTKhang architecture study](docs/NTKHANG-REFERENCE-STUDY.md).
 
 ## Realtime frame inspection
 
@@ -176,7 +226,7 @@ The package includes an MIT-licensed, separate Messenger E2EE client for one-to-
 Group Sender Keys/SKDM, encrypted history backup/restore, E2EE calls and key-transparency verification are not implemented. Private Meta endpoint and Noise-handshake live acceptance with an authorized AppState is still required; synthetic tests do not prove live Meta compatibility.
 
 
-## EryXen-compatible convenience APIs
+## FCA convenience APIs
 
 The native FCA facade also exposes media/location helpers and a namespaced client:
 

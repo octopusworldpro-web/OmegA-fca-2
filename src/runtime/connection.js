@@ -2,7 +2,7 @@
 
 const { EventEmitter } = require("node:events");
 
-const DEFAULTS = Object.freeze({ autoReconnect: true, minDelayMs: 1000, maxDelayMs: 30000, factor: 2, jitter: 0.2, maxAttempts: 8 });
+const DEFAULTS = Object.freeze({ minDelayMs: 1000, maxDelayMs: 30000, factor: 2, jitter: 0.2, maxAttempts: 8 });
 
 function abortError(signal) {
   return signal?.reason || Object.assign(new Error("Connection operation aborted"), {
@@ -34,9 +34,8 @@ class ConnectionSupervisor extends EventEmitter {
     this.connectDriver = connect;
     this.disconnectDriver = typeof disconnect === "function" ? disconnect : async () => {};
     this.options = { ...DEFAULTS, ...options };
-    const { autoReconnect, minDelayMs, maxDelayMs, factor, jitter, maxAttempts } = this.options;
-    if (typeof autoReconnect !== "boolean" ||
-        !Number.isInteger(minDelayMs) || minDelayMs < 0 || minDelayMs > 120000 ||
+    const { minDelayMs, maxDelayMs, factor, jitter, maxAttempts } = this.options;
+    if (!Number.isInteger(minDelayMs) || minDelayMs < 0 || minDelayMs > 120000 ||
         !Number.isInteger(maxDelayMs) || maxDelayMs < minDelayMs || maxDelayMs > 120000 ||
         !Number.isFinite(factor) || factor < 1 || factor > 10 ||
         !Number.isFinite(jitter) || jitter < 0 || jitter > 1 ||
@@ -231,14 +230,6 @@ class ConnectionSupervisor extends EventEmitter {
 
   #recover(failedGeneration) {
     if (this.recovering || this.stopRequested || failedGeneration !== this.generation) return Promise.resolve();
-    if (this.options.autoReconnect === false) {
-      const previous = this.driver;
-      this.driver = null;
-      this.#detachListener();
-      this.#setState("disconnected");
-      return Promise.resolve().then(() => previous ? this.disconnectDriver(previous) : undefined)
-        .catch(error => { try { this.emit("connectionError", error); } catch {} });
-    }
     this.recovering = true;
     const recovery = (async () => {
       const previous = this.driver;

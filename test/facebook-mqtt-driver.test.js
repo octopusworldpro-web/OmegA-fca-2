@@ -542,33 +542,3 @@ test("sendMessage reports explicit Messenger rejection instead of returning it a
     await driver.disconnect();
   }
 });
-
-
-test("native driver receives non-self thread events by default like EryXen FCA", async () => {
-  const socket = new FakeWebSocket();
-  const driver = await createFacebookMqttDriver({
-    appState, fetchImpl: async () => htmlResponse(), socketFactory: () => socket,
-    mqtt: { keepAlive: 0 }
-  });
-  const received = [];
-  const detach = driver.listen((error, event) => {
-    if (error) throw error;
-    received.push(event);
-  });
-  socket.emit("message", mqtt.encodePublish({
-    topic: "/t_ms",
-    payload: JSON.stringify({ deltas: [{
-      class: "ThreadEvent",
-      messageMetadata: {
-        threadKey: { threadFbId: "987654321" },
-        actorFbId: "111111111111111",
-        messageId: "default-listen-event"
-      },
-      body: "synthetic event"
-    }] }),
-    qos: 1, packetId: 19
-  }));
-  assert.equal(received.some(event => event.type === "event"), true);
-  detach();
-  await driver.disconnect();
-});

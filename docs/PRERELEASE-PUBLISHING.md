@@ -1,48 +1,47 @@
-# OmegA-FCA prerelease publishing
+# OmegA-FCA npm release publishing
 
-The repository is prepared for a public npm prerelease. Publishing is intentionally an owner-operated step; CI never publishes and no npm credential is stored in this repository.
+This repository publishes stable releases to npm's `latest` dist-tag and prereleases to `next`.
 
-## Current prerelease candidate
+## Current stable release candidate
 
 - Package: `@nirzon-islam/omega-fca`
-- Candidate version: `0.1.6-rc.3`
+- Target version: `0.1.6`
+- Git tag / GitHub Release: `v0.1.6`
 - Registry: `https://registry.npmjs.org/`
-- Dist-tag: `next` (configured in `publishConfig`; do not move the stable `latest` tag)
+- Dist-tag: `latest`
 
-## Before publishing
+## Required repository secret
 
-Run from the repository root on the verified `main` commit:
+Configure the repository Actions secret:
 
-```sh
-npm ci
-npm test
-npm run test:types
-npm run test:syntax
-npm pack --dry-run --json
-```
+- Name: `NPM_TOKEN`
+- Value: an npm access token with publish permission for `@nirzon-islam/omega-fca`
 
-Review the package file list and ensure no AppState, cookies, session keys, local environment files, or test credentials are included.
+Never commit or paste the token into source code, chat, or logs. The workflow uses GitHub Actions OIDC provenance and the token for npm registry authentication.
 
-## Owner-operated publish
+## Prepare and publish stable 0.1.6
 
-After the GitHub Actions run for the exact commit is green and the package contents have been reviewed:
+1. Confirm `package.json` and `package-lock.json` both declare `0.1.6`.
+2. Run the full test suite, TypeScript tests, syntax checks, and inspect `npm pack --dry-run`.
+3. Create and push the Git tag `v0.1.6` on the approved `main` commit.
+4. Create and publish the GitHub Release for `v0.1.6` (not marked as a prerelease).
+5. The `Publish npm release` workflow runs automatically. Alternatively, run it manually from Actions, select `main`, and enter `v0.1.6`.
+6. Wait for the publish and post-publish tarball verification steps to succeed.
 
-```sh
-npm publish --access public --tag next
-```
-
-The npm account must have publish permission and complete any required two-factor authentication. Do not put an npm token or OTP in GitHub source, chat, logs, or commits.
+The workflow checks out the exact tag, runs `npm ci`, tests, type checks, syntax checks, validates the package version against the tag, inspects the packed contents, publishes with provenance to `latest`, then downloads the registry tarball and confirms that `index.js` and `index.d.ts` are present.
 
 ## Verify the published artifact
 
+After the workflow succeeds:
+
 ```sh
-npm view @nirzon-islam/omega-fca@next version
+npm view @nirzon-islam/omega-fca@latest version
 npm view @nirzon-islam/omega-fca dist-tags
-npm pack @nirzon-islam/omega-fca@next
+npm pack @nirzon-islam/omega-fca@latest
 ```
 
-Confirm that `next` resolves to the intended candidate version and inspect the packed tarball. Only after that should GoatBot's `fca-migration-cleanup` dependency and lockfile be updated to the exact published version and tested with `npm ci`.
+Confirm that `latest` resolves to `0.1.6` and inspect the packed tarball. Only after that should GoatBot's dependency and lockfile be updated to the exact published version and tested with `npm ci`.
 
 ## Release boundary
 
-A successful package build and synthetic CI do not prove Facebook login, MQTT event delivery, message sending, attachments, or private web actions work against Meta's live service. Those still require an authorized owner-controlled AppState acceptance run.
+A successful package build and CI run do not prove Facebook login, MQTT event delivery, message sending, attachments, or private web actions work against Meta's live service. Those still require an authorized owner-controlled AppState acceptance run. Do not claim live-service compatibility without that acceptance evidence.

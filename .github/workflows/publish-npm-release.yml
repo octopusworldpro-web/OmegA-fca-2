@@ -1,0 +1,112 @@
+name: Publish npm release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing Git tag to publish (for example v0.1.6)
+        required: true
+        type: string
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-release-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.action == 'published'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Resolve release tag and dist-tag
+        id: release
+        shell: bash
+        env:
+          DISPATCH_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          TAG="${RELEASE_TAG:-$DISPATCH_TAG}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Refusing invalid semantic version tag: $TAG" >&2
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          if [[ "$VERSION" == *-* ]]; then
+            DIST_TAG="next"
+          else
+            DIST_TAG="latest"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "dist_tag=$DIST_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
+      - name: Set up Node.js and npm registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests and type checks
+        run: |
+          npm test
+          npm run test:types
+          npm run test:syntax
+
+      - name: Verify package version matches release tag
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$PACKAGE_VERSION" != "$RELEASE_VERSION" ]]; then
+            echo "package.json version ($PACKAGE_VERSION) does not match release tag ($RELEASE_VERSION)" >&2
+            exit 1
+          fi
+          npm pack --dry-run --json
+
+      - name: Publish to npm
+        run: npm publish --access public --tag "${{ steps.release.outputs.dist_tag }}" --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify published npm version and tarball
+        shell: bash
+        env:
+          PACKAGE_NAME: ${{ github.repository_owner == 'nirzon-islam' && '@nirzon-islam/omega-fca' }}
+          PACKAGE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          READY=0
+          for attempt in {1..18}; do
+            if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" dist.tarball --json > /tmp/omega-fca-tarball-url.txt 2>/dev/null; then
+              TARBALL_URL="$(node -e "const fs=require('fs');const s=fs.readFileSync('/tmp/omega-fca-tarball-url.txt','utf8').trim();process.stdout.write(JSON.parse(s))")"
+              if [[ -n "$TARBALL_URL" ]] && curl --fail --silent --show-error --location "$TARBALL_URL" -o /tmp/omega-fca.tgz; then
+                tar -tzf /tmp/omega-fca.tgz | grep -qx 'package/index.js'
+                tar -tzf /tmp/omega-fca.tgz | grep -qx 'package/index.d.ts'
+                READY=1
+                break
+              fi
+            fi
+            echo "npm registry/tarball not ready yet (attempt $attempt/18)"
+            sleep 10
+          done
+          if [[ "$READY" != "1" ]]; then
+            echo "Published npm version is not downloadable or is missing required entry files." >&2
+            exit 1
+          fi
+          echo "Verified ${PACKAGE_NAME}@${PACKAGE_VERSION} tarball: $TARBALL_URL"

@@ -27,7 +27,7 @@ function parseAccountText(text) {
   const source = text.trim();
   if (source.length > 256 * 1024) throw new TypeError("account.txt exceeds 256 KiB");
   if (/^(?:fb_email|email|fb_username|username|fb_password|password|fb_2fa_secret|2FASecret)\s*=/im.test(source)) {
-    throw new TypeError("account.txt is AppState/cookie-only; credential login is disabled for security. Supply an authorized AppState or Cookie header.");
+    throw new TypeError("account.txt is AppState/cookie-only; put fb_email, password and 2FASecret in config.json → facebookAccount");
   }
   if (source.startsWith("[") || source.startsWith("{")) {
     const parsed = JSON.parse(source);

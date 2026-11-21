@@ -1,6 +1,6 @@
 {
   "name": "@nirzon-islam/omega-fca",
-  "version": "0.1.6-rc.3",
+  "version": "0.1.7",
   "description": "OmegA Bot Facebook integration library, developed and maintained by NirZon",
   "main": "index.js",
   "type": "commonjs",
@@ -42,9 +42,6 @@
     "docs/GOATBOT-COMPATIBILITY-MATRIX.md",
     "docs/GOATBOT-INTEGRATION-AUDIT.md",
     "docs/GOATBOT-CALLSITE-INVENTORY.md",
-    "docs/REFERENCE-AUDIT.md",
-    "docs/ERYXEN-REFERENCE-AUDIT.md",
-    "docs/ERYXEN-API-PARITY-MATRIX.md",
     "docs/NTKHANG-REFERENCE-STUDY.md",
     "docs/SAFE-DIAGNOSTICS.md",
     "docs/REALTIME-FRAME-EVIDENCE.md",
@@ -72,6 +69,10 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public",
-    "tag": "next"
+    "tag": "latest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nirzon-islam/OmegA-FCA.git"
   }
 }
