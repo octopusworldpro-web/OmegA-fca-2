@@ -13,6 +13,7 @@ const { readImageInput, readAttachmentInput, downloadAttachment: downloadAttachm
 const { offlineThreadingId, createMessengerEditMessageRequest, createMessengerShareContactRequest, createMessengerChangeGroupImageRequest, createMessengerPinMessageRequest } = require("./messengerActions");
 const { createHumanizer } = require("../compat/humanizer");
 const { createBroadcastSender } = require("../compat/broadcast");
+const { createImgbbUploader } = require("../compat/imgbb");
 const { E2EEClient } = require("../e2ee/client");
 const { createE2EEHttpAdapter } = require("../e2ee/httpAdapter");
 
@@ -174,6 +175,7 @@ async function createFacebookMqttDriver({
       guard.start(sessionGuardOptions.intervalMs === undefined ? 60_000 : sessionGuardOptions.intervalMs);
     }
     const threadApi = createFacebookThreadApi({ session, clientId: protocolConfig.session.clientId, webClient });
+    const uploadImageToImgbb = createImgbbUploader({ apiKey: loginOptions.imgbbApiKey, fetchImpl });
     let e2eeClient = null;
     const e2eeListeners = new Set();
     const e2eeStorageKey = loginOptions.e2eeStorageKey ?? sessionGuardOptions?.key ?? null;
@@ -763,6 +765,7 @@ async function createFacebookMqttDriver({
         return callbackResult(operation, done);
       },
       getCurrentUserID: () => session.userId,
+      uploadImageToImgbb,
       getAppState: () => session.getAppState(),
       // Sensitive legacy FCA compatibility helper. Never log or expose this value to ordinary users.
       getCookies: () => session.getCookieHeader("https://www.facebook.com/"),

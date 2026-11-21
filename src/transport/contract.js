@@ -3,7 +3,7 @@
 const REQUIRED_DRIVER_METHODS = Object.freeze(["listen"]);
 const OPTIONAL_DRIVER_METHODS = Object.freeze([
   "disconnect", "getCurrentUserID", "sendRequest", "sendMessage", "sendBroadcast", "connectE2EE", "_connectE2EEAndMerge", "sendE2EEMessage", "sendE2EEAttachment", "downloadE2EEAttachment", "isE2EEThread", "getE2EEStatus", "getUserInfo", "getThreadInfo",
-  "getThreadList", "markAsRead", "markAsReadAll", "markAsSeen", "deleteMessage", "deleteThread", "muteThread", "changeArchivedStatus", "setMessageReaction", "sendTypingIndicator",
+  "getThreadList", "uploadImageToImgbb", "markAsRead", "markAsReadAll", "markAsSeen", "deleteMessage", "deleteThread", "muteThread", "changeArchivedStatus", "setMessageReaction", "sendTypingIndicator",
   "unsendMessage", "changeNickname", "addUserToGroup", "removeUserFromGroup",
   "createNewGroup", "changeAdminStatus", "createPoll", "handleMessageRequest", "searchForThread", "getThreadPictures", "changeBlockedStatus", "changeBio", "unfriend", "getEmojiUrl", "getThreadHistory", "getMessage", "getFriendsList", "getUserID"
 ]);

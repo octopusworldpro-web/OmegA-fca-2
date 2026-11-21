@@ -16,7 +16,7 @@ const METHOD_FEATURES = Object.freeze({
   createNewGroup: "groups", addUserToGroup: "groups", removeUserFromGroup: "groups",
   changeNickname: "groups", changeAdminStatus: "groups", createPoll: "groups", changeGroupImage: "groups", changeAvatar: "groups", changeBlockedStatus: "users", changeBio: "users", unfriend: "users",
   changeThreadColor: "groups", changeThreadEmoji: "groups", setTitle: "groups",
-  pinMessage: "groups", unpinMessage: "groups", sendFriendRequest: "users", followUser: "users", unfollowUser: "users", postComment: "users", sharePost: "posts",
+  pinMessage: "groups", unpinMessage: "groups", sendFriendRequest: "users", uploadImageToImgbb: "messaging", followUser: "users", unfollowUser: "users", postComment: "users", sharePost: "posts",
   setMessageReaction: "reactions", setPostReaction: "reactions", reactToPost: "reactions", reactToComment: "reactions", handleFriendRequest: "users"
 });
 
@@ -24,7 +24,7 @@ const DRIVER_METHODS = [
   "sendRequest", "sendMessage", "sendBroadcast", "connectE2EE", "_connectE2EEAndMerge", "disconnectE2EE", "listenE2EE", "sendE2EEMessage", "sendE2EEReaction", "editE2EEMessage", "unsendE2EEMessage", "sendE2EETyping", "sendE2EEAttachment", "downloadE2EEAttachment", "isE2EEThread", "getE2EEStatus", "editMessage", "shareContact", "uploadAttachment", "downloadAttachment", "forwardAttachment", "httpGet", "httpPost", "httpPostFormData", "getUserInfo", "getThreadInfo", "getThreadList", "getCurrentUserID", "getAppState", "getCookies", "getHumanizer", "refreshFb_dtsg", "saveSession", "restoreSessionBackup", "setOptions",
   "markAsRead", "markAsReadAll", "markAsSeen", "markAsDelivered", "setPostReaction", "reactToPost", "reactToComment", "handleFriendRequest", "deleteMessage", "deleteThread", "muteThread", "changeArchivedStatus", "setMessageReaction", "sendTypingIndicator", "unsendMessage",
   "changeNickname", "changeAdminStatus", "createPoll", "handleMessageRequest", "searchForThread", "getThreadPictures", "changeBlockedStatus", "changeBio", "unfriend", "getEmojiUrl", "changeGroupImage", "changeAvatar", "changeThreadColor", "changeThreadEmoji", "setTitle", "addUserToGroup", "removeUserFromGroup", "createNewGroup",
-  "getThreadHistory", "getMessage", "getFriendsList", "getUserID", "getUID", "resolvePhotoUrl", "pinMessage", "unpinMessage", "sendFriendRequest", "followUser", "unfollowUser", "postComment", "sharePost"
+  "getThreadHistory", "getMessage", "getFriendsList", "getUserID", "getUID", "resolvePhotoUrl", "pinMessage", "unpinMessage", "sendFriendRequest", "followUser", "unfollowUser", "postComment", "sharePost", "uploadImageToImgbb"
 ];
 
 function createClient({ authenticate, options = {}, reconnect = {}, license = {}, requireLicense = false, onLicenseError = () => {} } = {}) {
@@ -375,21 +375,32 @@ function createClient({ authenticate, options = {}, reconnect = {}, license = {}
       });
     }
     const externalMethods = new Map();
-    facade.addExternalModule = module => {
-      if (!module || typeof module !== "object" || Array.isArray(module)) {
-        throw new TypeError("addExternalModule requires an object of named functions");
+    const registerExternalMethod = (name, method) => {
+      if (!/^[A-Za-z_$][A-Za-z0-9_$]{0,63}$/.test(name) ||
+          ["__proto__", "prototype", "constructor", "addExternalModule"].includes(name) ||
+          Object.prototype.hasOwnProperty.call(facade, name) || DRIVER_METHODS.includes(name) ||
+          externalMethods.has(name) || typeof method !== "function") {
+        throw new TypeError("External FCA module contains an invalid, duplicate, or reserved method: " + name);
+      }
+      externalMethods.set(name, method);
+      return name;
+    };
+    facade.addExternalModule = (module, factory) => {
+      if (typeof module === "string" && typeof factory === "function") {
+        const name = module.trim();
+        if (!name) throw new TypeError("External FCA module name is required");
+        const defaultFuncs = Object.freeze({ httpGet: facade.httpGet, httpPost: facade.httpPost, httpPostFormData: facade.httpPostFormData });
+        const context = Object.freeze({ userID: userId });
+        const method = factory(defaultFuncs, api || facade, context);
+        if (typeof method !== "function") throw new TypeError("EryXen-compatible external module factory must return a function");
+        registerExternalMethod(name, method);
+        return name;
+      }
+      if (factory !== undefined || !module || typeof module !== "object" || Array.isArray(module)) {
+        throw new TypeError("addExternalModule requires an object of named functions or (name, factory)");
       }
       const names = [];
-      for (const [name, method] of Object.entries(module)) {
-        if (!/^[A-Za-z_$][A-Za-z0-9_$]{0,63}$/.test(name) ||
-            ["__proto__", "prototype", "constructor", "addExternalModule"].includes(name) ||
-            Object.prototype.hasOwnProperty.call(facade, name) ||
-            DRIVER_METHODS.includes(name) || externalMethods.has(name) || typeof method !== "function") {
-          throw new TypeError("External FCA module contains an invalid, duplicate, or reserved method: " + name);
-        }
-        externalMethods.set(name, method.bind(facade));
-        names.push(name);
-      }
+      for (const [name, method] of Object.entries(module)) { registerExternalMethod(name, method.bind(api || facade)); names.push(name); }
       return Object.freeze(names);
     };
     facade.logout = callback => logout(callback);

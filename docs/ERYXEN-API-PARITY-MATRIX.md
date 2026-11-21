@@ -98,11 +98,11 @@ The E2EE namespace now exposes a distinct E2EE-only listener plus one-to-one rea
 | `setOptions` | Partial | Supported listener/runtime flags are validated; not every Eryxen option is implemented. |
 | `logout` | Implemented | Client lifecycle shutdown and callback/Promise form exist. |
 | `refreshFb_dtsg` | Implemented | Authenticated web-client token refresh exists. |
-| `addExternalModule` | Implemented; contract differs | OmegA accepts an object of named functions, not Eryxen's `(moduleName, factory)` form. Do not call this exact signature parity. |
+| `addExternalModule` | Implemented; both contracts supported | Preserves OmegA object-of-functions form and adds Eryxen `(moduleName, factory)` overload with restricted helpers and account context. |
 | `httpGet` | Implemented | Authenticated HTTPS allowlisted web client. |
 | `httpPost` | Implemented | Authenticated HTTPS allowlisted web client. |
 | `httpPostFormData` | Implemented | Authenticated multipart helper with URL and size controls. |
-| `uploadImageToImgbb` | **Missing** | No Imgbb upload integration; intentionally not substituted with a different host. |
+| `uploadImageToImgbb` | Implemented; requires owner-supplied ImgBB API key | HTTPS image URL upload through ImgBB API; key is read from login options or environment and never logged. |
 | `createFcaClient` | Implemented; partial surface | Namespaced groups exist; only available methods are bound. Audit namespace aliases and exact reference shape separately. |
 | `createMessengerBot` / `MessengerBot` | Implemented; partial behavior | Command/hears/messageCreate/launch/stop wrapper exists; it is not a full Telegraf/Discord clone. |
 

@@ -52,6 +52,7 @@ function createFcaClient(api) {
     ["setPostReaction", "react"], ["reactToPost"], ["reactToComment"],
     ["postComment", "comment"], ["sharePost", "share"]
   ]);
+  const media = group(api, [["uploadImageToImgbb", "uploadToImgbb"]]);
   const account = group(api, [
     ["getCurrentUserID", "getCurrentUserId"], ["getAppState"],
     ["getCookies"], ["refreshFb_dtsg", "refreshDtsg"],
@@ -59,7 +60,7 @@ function createFcaClient(api) {
     ["stopSessionGuard"], ["addExternalModule"]
   ]);
 
-  return Object.freeze({ messages, threads, users, posts, account });
+  return Object.freeze({ messages, threads, users, posts, media, account });
 }
 
 module.exports = { createFcaClient };

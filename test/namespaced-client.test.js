@@ -45,3 +45,9 @@ test("createFcaClient exposes pin and social methods in their namespaces", () =>
   assert.deepEqual(client.posts.comment("Nice", "p1"), ["comment", "Nice", "p1"]);
   assert.deepEqual(client.posts.share("p1"), ["share", "p1"]);
 });
+
+test("createFcaClient exposes ImgBB upload in the media namespace", () => {
+  const api = { uploadImageToImgbb: url => "hosted:" + url };
+  const client = createFcaClient(api);
+  assert.equal(client.media.uploadToImgbb("https://example.com/a.png"), "hosted:https://example.com/a.png");
+});

@@ -426,3 +426,30 @@ test("FCA facade exposes profile, public-data and avatar compatibility helpers",
   await client.logout();
 });
 
+
+test("client supports EryXen addExternalModule(name, factory) and preserves object form", async () => {
+  const client = createClient({
+    authenticate: async () => ({
+      getCurrentUserID: () => "123456",
+      listen: () => () => {},
+      disconnect: async () => {}
+    })
+  });
+  const api = await client.login({ mode: "appstate", appState: [
+    { key: "c_user", value: "123456", domain: "facebook.com" },
+    { key: "xs", value: "synthetic-session-value", domain: "facebook.com" }
+  ] });
+  let received;
+  assert.equal(api.addExternalModule("hello", (defaultFuncs, suppliedApi, context) => {
+    received = { defaultFuncs, suppliedApi, context };
+    return function (suffix) { return suppliedApi.getCurrentUserID() + suffix; };
+  }), "hello");
+  assert.equal(api.hello("!"), "123456!");
+  assert.equal(received.suppliedApi, api);
+  assert.deepEqual(received.context, { userID: "123456" });
+  assert.deepEqual(Object.keys(received.defaultFuncs).sort(), ["httpGet", "httpPost", "httpPostFormData"]);
+  assert.deepEqual(api.addExternalModule({ omegaHelper: () => "ok" }), ["omegaHelper"]);
+  assert.equal(api.omegaHelper(), "ok");
+  assert.throws(() => api.addExternalModule("invalid", () => ({})), /must return a function/);
+  await client.logout();
+});

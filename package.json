@@ -54,7 +54,8 @@
     "docs/E2EE.md",
     "docs/TYPESCRIPT.md",
     "docs/PRERELEASE-PUBLISHING.md",
-    "docs/ERYXEN-COMPATIBLE-LOGIN.md"
+    "docs/ERYXEN-COMPATIBLE-LOGIN.md",
+    "docs/ERYXEN-API-ACCOUNT-COMPATIBILITY.md"
   ],
   "exports": {
     ".": {
