@@ -400,7 +400,7 @@ function createClient({ authenticate, options = {}, reconnect = {}, license = {}
         throw new TypeError("addExternalModule requires an object of named functions or (name, factory)");
       }
       const names = [];
-      for (const [name, method] of Object.entries(module)) { registerExternalMethod(name, method.bind(api || facade)); names.push(name); }
+      for (const [name, method] of Object.entries(module)) { registerExternalMethod(name, typeof method === "function" ? method.bind(api || facade) : method); names.push(name); }
       return Object.freeze(names);
     };
     facade.logout = callback => logout(callback);
