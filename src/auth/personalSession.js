@@ -302,6 +302,7 @@ async function createPersonalSession({
 
     async function refreshTokens() {
       if (closed) throw new Error("Facebook session is closed");
+      const previousCookies = jar.cookies.map(cookie => ({ ...cookie }));
       const refreshController = new AbortController();
       const refreshTimer = setTimeout(() => refreshController.abort(new Error("Facebook token refresh timed out")), timeoutMs);
       try {
@@ -334,6 +335,21 @@ async function createPersonalSession({
           throw sessionError("The supplied Facebook AppState is expired or not authenticated", "FCA_SESSION_EXPIRED", "logged_out");
         }
         if (!response.ok) throw sessionError("Facebook token refresh failed with HTTP " + response.status, "FCA_TOKEN_REFRESH_FAILED", "error");
+        const refreshedUserId = extractIdentity(refreshedHtml);
+        if (!refreshedUserId) {
+          throw sessionError(
+            "Facebook token refresh did not return a verifiable account identity",
+            "FCA_SESSION_IDENTITY_UNVERIFIED",
+            "error"
+          );
+        }
+        if (refreshedUserId !== userId) {
+          throw sessionError(
+            "Facebook token refresh returned a different account identity",
+            "FCA_SESSION_IDENTITY_MISMATCH",
+            "error"
+          );
+        }
         const refreshed = extractFacebookTokens(refreshedHtml);
         if (!refreshed.fbDtsg) {
           throw sessionError("Facebook did not return a usable fb_dtsg token", "FCA_TOKEN_REFRESH_FAILED", "error");
@@ -344,6 +360,9 @@ async function createPersonalSession({
           tokenNames: Object.freeze(Object.keys(refreshed).filter(key => Boolean(refreshed[key])))
         });
       } catch (error) {
+        // Do not retain cookies rotated by a response that failed validation.
+        jar.clear();
+        jar.setCookies(previousCookies);
         if (error?.name === "AbortError" || refreshController.signal.aborted) {
           throw sessionError("Facebook token refresh timed out", "FCA_SESSION_TIMEOUT", "error");
         }

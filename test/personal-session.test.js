@@ -266,6 +266,47 @@ test("personal session refreshes fb_dtsg and returns only non-secret token metad
   session.close();
 });
 
+test("token refresh rejects a different account and rolls back rotated cookies", async () => {
+  let calls = 0;
+  const session = await createPersonalSession({
+    appState,
+    fetchImpl: async () => {
+      calls++;
+      if (calls === 1) return response();
+      return response({
+        html: '<html><script>{"USER_ID":"999999999999999"}</script><input name="fb_dtsg" value="wrong-account-token"></html>',
+        setCookies: ["sid=wrong-account; Domain=.facebook.com; Path=/; Secure"]
+      });
+    }
+  });
+  await assert.rejects(
+    session.refreshTokens(),
+    error => error.code === "FCA_SESSION_IDENTITY_MISMATCH"
+  );
+  assert.equal(session.getTokens().fbDtsg, null);
+  assert.doesNotMatch(session.getCookieHeader(), /sid=wrong-account/);
+  session.close();
+});
+
+test("token refresh refuses a success response without account identity", async () => {
+  let calls = 0;
+  const session = await createPersonalSession({
+    appState,
+    fetchImpl: async () => {
+      calls++;
+      return calls === 1 ? response() : response({
+        html: '<html><input name="fb_dtsg" value="unverified-token"></html>'
+      });
+    }
+  });
+  await assert.rejects(
+    session.refreshTokens(),
+    error => error.code === "FCA_SESSION_IDENTITY_UNVERIFIED"
+  );
+  assert.equal(session.getTokens().fbDtsg, null);
+  session.close();
+});
+
 test("personal session restores an account-bound AppState and rolls back a mismatched identity", async () => {
   const html = '<html><script>{"USER_ID":"123456789012345"}</script><input type="hidden" name="fb_dtsg" value="fresh-token"></html>';
   const session = await createPersonalSession({ appState, fetchImpl: async () => response({ html }) });
