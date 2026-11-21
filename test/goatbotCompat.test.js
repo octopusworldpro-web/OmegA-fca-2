@@ -25,13 +25,19 @@ test("adapts GoatBot AppState login signature to the client contract", async () 
   assert.equal(callbackResult.value, api);
 });
 
-test("adapts GoatBot credential login and manual 2FA data", async () => {
-  let received;
+test("rejects GoatBot credential login and manual 2FA instead of forwarding secrets", async () => {
+  let called = false;
   const login = createGoatBotLogin({
-    async login(credentials) { received = credentials; return { ok: true }; }
+    async login() { called = true; return { ok: true }; }
   });
-  await login({ email: "demo@example.com", pass: "synthetic-password", "2FASecret": "synthetic-2fa" }, {}, () => {});
-  assert.equal(received.mode, "credentials");
-  assert.equal(received.password, "synthetic-password");
-  assert.equal(received.twoFactorSecret, "synthetic-2fa");
+  let failure;
+  const result = await login(
+    { email: "demo@example.com", pass: "synthetic-password", "2FASecret": "synthetic-2fa" },
+    {},
+    error => { failure = error; }
+  );
+  assert.equal(result, null);
+  assert.equal(failure.code, "FCA_CREDENTIAL_LOGIN_UNSUPPORTED");
+  assert.equal(failure.retryable, false);
+  assert.equal(called, false);
 });
