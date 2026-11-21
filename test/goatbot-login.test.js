@@ -97,7 +97,7 @@ test("GoatBot adapter rejects missing callback and reports unsupported login inp
   assert.throws(() => login({ appState: [] }), /callback is required/);
   let reported;
   assert.equal(await login({ token: "not-supported" }, error => { reported = error; }), null);
-  assert.match(reported.message, /requires AppState, credentials, or an empty input/);
+  assert.match(reported.message, /requires AppState, cookies/);
   assert.equal(reported.retryable, false);
 });
 
@@ -124,7 +124,7 @@ test("GoatBot adapter rejects credentials stored in account.txt", async () => {
   const path = require("node:path");
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "omega-goatbot-account-"));
   try {
-    fs.writeFileSync(path.join(root, "account.txt"), "fb_email=owner@example.test\\nfb_password=private-password");
+    fs.writeFileSync(path.join(root, "account.txt"), "fb_email=owner@example.test\nfb_password=private-password");
     let received;
     const login = createGoatBotLogin({
       async login(credentials) { received = credentials; return {}; }
@@ -180,4 +180,42 @@ test("GoatBot adapter forwards encrypted SessionGuard restore mode", async () =>
   const result = await login({ mode: "session" }, () => {});
   assert.equal(result, api);
   assert.deepEqual(received, { mode: "session" });
+});
+
+test("GoatBot adapter maps a raw Cookie header to native cookie login", async () => {
+  let received;
+  const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } });
+  await login({ cookie: "c_user=123456789; xs=session-cookie" }, () => {});
+  assert.deepEqual(received, { mode: "cookie", cookie: "c_user=123456789; xs=session-cookie" });
+});
+
+test("GoatBot adapter accepts the cookies array alias used by FCA integrations", async () => {
+  let received;
+  const cookies = [{ key: "c_user", value: "123456789" }, { key: "xs", value: "session-cookie" }];
+  const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } });
+  await login({ cookies }, () => {});
+  assert.deepEqual(received, { mode: "appstate", appState: cookies });
+});
+
+test("GoatBot adapter converts Netscape cookie text into AppState", async () => {
+  let received;
+  const netscape = [
+    "# Netscape HTTP Cookie File",
+    ".facebook.com\tTRUE\t/\tTRUE\t1893456000\tc_user\t123456789",
+    "#HttpOnly_.facebook.com\tTRUE\t/\tTRUE\t1893456000\txs\tsession-cookie"
+  ].join("\n");
+  const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } });
+  await login({ mode: "netscape", netscape }, () => {});
+  assert.equal(received.mode, "appstate");
+  assert.equal(received.appState.length, 2);
+  assert.equal(received.appState[0].key, "c_user");
+  assert.equal(received.appState[1].key, "xs");
+  assert.equal(received.appState[1].httpOnly, true);
+});
+
+test("GoatBot adapter reports malformed Netscape input through the error callback", async () => {
+  const login = createGoatBotLogin({ async login() { throw new Error("must not login"); } });
+  let failure;
+  assert.equal(await login({ mode: "netscape", netscape: "not-a-cookie-file" }, error => { failure = error; }), null);
+  assert.match(failure.message, /Malformed Netscape cookie row/);
 });
