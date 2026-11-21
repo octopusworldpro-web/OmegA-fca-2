@@ -542,3 +542,44 @@ test("sendMessage reports explicit Messenger rejection instead of returning it a
     await driver.disconnect();
   }
 });
+
+test("driver fails closed before MQTT socket creation for expired, checkpointed, mismatched and unverified sessions", async () => {
+  const cases = [
+    { name: "expired session", status: 302, location: "https://www.facebook.com/login.php", html: "", code: "FCA_SESSION_EXPIRED" },
+    { name: "checkpoint session", status: 200, html: "<html>checkpoint_required</html>", code: "FCA_CHECKPOINT_REQUIRED" },
+    { name: "different account", status: 200, html: '<html><script>{"USER_ID":"999999999999999"}</script></html>', code: "FCA_SESSION_IDENTITY_MISMATCH" },
+    { name: "unverifiable identity", status: 200, html: "<html><body>Generic success page</body></html>", code: "FCA_SESSION_IDENTITY_UNVERIFIED" }
+  ];
+
+  for (const scenario of cases) {
+    let socketCreations = 0;
+    const fetchImpl = async () => ({
+      status: scenario.status,
+      ok: scenario.status >= 200 && scenario.status < 300,
+      headers: {
+        get(name) {
+          if (name.toLowerCase() === "location") return scenario.location || null;
+          if (name.toLowerCase() === "content-length") return String(Buffer.byteLength(scenario.html));
+          return null;
+        },
+        getSetCookie() { return []; }
+      },
+      async text() { return scenario.html; }
+    });
+
+    await assert.rejects(
+      createFacebookMqttDriver({
+        appState,
+        fetchImpl,
+        socketFactory: () => {
+          socketCreations++;
+          return new FakeWebSocket();
+        },
+        mqtt: { keepAlive: 0 }
+      }),
+      error => error.code === scenario.code,
+      scenario.name
+    );
+    assert.equal(socketCreations, 0, scenario.name + " must not create an MQTT socket");
+  }
+});
