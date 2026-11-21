@@ -14,6 +14,7 @@ const { createRequestClient, retryAfterMs, isRetryableStatus } = require("./src/
 const { createPersonalSession, detectSessionChallenge, extractIdentity, extractFacebookTokens } = require("./src/auth/personalSession");
 const { createAuthenticationAttempt, AUTHENTICATION_ATTEMPT_STATES } = require("./src/auth/authenticationAttempt");
 const { parseAccountText, loadAccountConfig } = require("./src/auth/accountConfig");
+const { exchangeFacebookAccessToken } = require("./src/auth/facebookToken");
 const { generateTotp } = require("./src/auth/totp");
 const { normalizeFacebookResponse, stripFacebookJsonPrefix, createFacebookError } = require("./src/auth/facebookResponse");
 const { createFacebookWebClient, assertFacebookUrl, toFormBody } = require("./src/auth/facebookWebClient");
@@ -54,7 +55,7 @@ module.exports = {
   saveSession, loadSession, deleteSession, createSessionGuard, ConnectionSupervisor, EventDispatcher,
   CookieJar, createRequestClient, retryAfterMs, isRetryableStatus, createPersonalSession, detectSessionChallenge, extractIdentity, extractFacebookTokens,
   createAuthenticationAttempt, AUTHENTICATION_ATTEMPT_STATES,
-  parseAccountText, loadAccountConfig, generateTotp,
+  parseAccountText, loadAccountConfig, exchangeFacebookAccessToken, generateTotp,
   normalizeFacebookResponse, stripFacebookJsonPrefix, createFacebookError,
   createFacebookWebClient, assertFacebookUrl, toFormBody, createClient,
   createGoatBotLogin, createFcaLogin, login: defaultFcaLogin.login, logout: defaultFcaLogin.logout,

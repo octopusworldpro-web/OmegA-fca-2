@@ -14,7 +14,7 @@ function createFcaLogin(options = {}) {
 
   const { client: suppliedClient, ...clientOptions } = options;
   const client = suppliedClient || createFacebookMqttClient(clientOptions);
-  const goatBotLogin = createGoatBotLogin(client);
+  const goatBotLogin = createGoatBotLogin(client, clientOptions);
 
   function login(credentials = {}, loginOptions = {}, callback) {
     if (typeof loginOptions === "function") {

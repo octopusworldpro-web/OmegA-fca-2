@@ -219,3 +219,74 @@ test("GoatBot adapter reports malformed Netscape input through the error callbac
   assert.equal(await login({ mode: "netscape", netscape: "not-a-cookie-file" }, error => { failure = error; }), null);
   assert.match(failure.message, /Malformed Netscape cookie row/);
 });
+
+
+test("GoatBot adapter exchanges an EAAAA token before native AppState login", async () => {
+  const token = "EAAAA" + "A".repeat(64);
+  const calls = [];
+  const fetchImpl = async url => {
+    calls.push(new URL(url));
+    if (calls.length === 1) return { ok: true, json: async () => ({ id: "123456" }) };
+    return { ok: true, json: async () => ({ session_cookies: [
+      { name: "c_user", value: "123456789", domain: ".facebook.com", path: "/" },
+      { name: "xs", value: "session-cookie-value", domain: ".facebook.com", path: "/" }
+    ] }) };
+  };
+  let received;
+  const login = createGoatBotLogin({ async login(credentials) { received = credentials; return { id: "api" }; } }, { fetchImpl });
+  await login({ token }, () => {});
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].hostname, "graph.facebook.com");
+  assert.equal(calls[1].hostname, "api.facebook.com");
+  assert.equal(calls[1].searchParams.get("new_app_id"), "123456");
+  assert.equal(received.mode, "appstate");
+  assert.deepEqual(received.appState.map(cookie => cookie.key), ["c_user", "xs"]);
+});
+
+test("GoatBot adapter loads an EAAAA token from account.txt and exchanges it", async () => {
+  const fs = require("node:fs");
+  const os = require("node:os");
+  const path = require("node:path");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omega-goatbot-token-"));
+  try {
+    const token = "EAAAA" + "B".repeat(64);
+    fs.writeFileSync(path.join(root, "account.txt"), token);
+    let calls = 0;
+    const fetchImpl = async () => {
+      calls++;
+      return calls === 1
+        ? { ok: true, json: async () => ({ id: "123456" }) }
+        : { ok: true, json: async () => ({ session_cookies: [
+            { name: "c_user", value: "123456789" },
+            { name: "xs", value: "session-cookie-value" }
+          ] }) };
+    };
+    let received;
+    const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } }, { cwd: root, env: {}, fetchImpl });
+    await login({}, () => {});
+    assert.equal(calls, 2);
+    assert.equal(received.mode, "appstate");
+    assert.deepEqual(received.appState.map(cookie => cookie.key), ["c_user", "xs"]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("GoatBot adapter accepts Cookie header aliases", async () => {
+  let received;
+  const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } });
+  await login({ cookieHeader: "c_user=123456789; xs=session-cookie-value" }, () => {});
+  assert.equal(received.mode, "cookie");
+  assert.equal(received.cookie, "c_user=123456789; xs=session-cookie-value");
+});
+
+test("GoatBot adapter reports token exchange failures without leaking the token", async () => {
+  const token = "EAAAA" + "C".repeat(64);
+  const login = createGoatBotLogin({ async login() { throw new Error("must not reach native login"); } }, {
+    fetchImpl: async () => ({ ok: true, json: async () => ({ error: { message: "bad token " + token } }) })
+  });
+  let failure;
+  assert.equal(await login({ accessToken: token }, error => { failure = error; }), null);
+  assert.match(failure.message, /rejected the supplied access token/);
+  assert.doesNotMatch(failure.message, new RegExp(token));
+});

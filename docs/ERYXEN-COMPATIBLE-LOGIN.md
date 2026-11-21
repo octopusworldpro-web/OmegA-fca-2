@@ -29,12 +29,16 @@ The package also exports `createFcaLogin(options)` for isolated client instances
 ## Supported authentication scope
 
 This compatibility entry point preserves OmegA-FCA's current native authentication boundary:
-- Owner-authorized AppState in `{ appState: [...] }`.
+- Owner-authorized AppState in `{ appState: [...] }` or the `cookies` alias.
+- Raw Cookie header (`cookie`, `cookieHeader`, or `headers.Cookie`).
+- Netscape cookie text (`netscape` / `netscapeCookies`).
+- An owner-supplied `EAAAA...` access token, exchanged for session cookies and then passed through the same native AppState login path.
+- `account.txt` with a raw Cookie header, Netscape export, JSON cookie array/wrapper, or `EAAAA...` token; `appstate.json` remains the fallback.
 - Encrypted SessionGuard restore via `{ mode: "session" }` when configured.
 - Empty input can load the supported local AppState files through the existing GoatBot adapter.
 
-Facebook username/password and automated 2FA login are not enabled by this API. A Facebook checkpoint must be completed by the account owner. Cookie values, AppState, and session keys must never be logged or committed.
+Facebook username/password and automated 2FA login are not enabled by this API and now fail explicitly before reaching the native client (rather than being mapped to an unsupported credentials mode). A Facebook checkpoint must be completed by the account owner. Cookie values, AppState, and session keys must never be logged or committed.
 
 ## Compatibility note
 
-The login signature and error-first callback shape are compatible with the common EryXen/GoatBot call pattern. This does not claim complete FCA method/event parity or live Facebook acceptance. The native MQTT handshake and private Facebook endpoints remain subject to authorized live-account testing.
+The login signature and error-first callback shape are compatible with the common EryXen/GoatBot call pattern. This does not claim complete FCA method/event parity or live Facebook acceptance. The legacy Facebook token-to-session endpoint may be changed or disabled by Meta; token exchange is covered with deterministic tests but still requires authorized live-account verification. The native MQTT handshake and private Facebook endpoints remain subject to authorized live-account testing.

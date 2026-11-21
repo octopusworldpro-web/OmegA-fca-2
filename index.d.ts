@@ -1,6 +1,8 @@
 import type { EventEmitter } from "node:events";
 
 export type LoginMode = "appstate" | "cookie" | "session";
+export interface FacebookTokenExchangeOptions { fetchImpl?: typeof fetch; timeoutMs?: number; }
+export function exchangeFacebookAccessToken(accessToken: string, options?: FacebookTokenExchangeOptions): Promise<Cookie[]>;
 export type AuthenticationAttemptState = "idle" | "authenticating" | "challenge_required" | "verifying_challenge" | "authenticated" | "failed" | "closed";
 export interface AuthenticationChallenge { readonly type: string; readonly message: string | null; readonly methods: readonly string[]; }
 export interface AuthenticationAttemptSnapshot { readonly state: AuthenticationAttemptState; readonly challenge: AuthenticationChallenge | null; readonly challengeRounds: number; readonly authenticated: boolean; readonly error: Readonly<{ name: string; code: string | null; message: string }> | null; }

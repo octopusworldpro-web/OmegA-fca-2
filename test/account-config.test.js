@@ -82,3 +82,12 @@ test("rejects credential-style account.txt keys with whitespace around equals", 
     assert.throws(() => parseAccountText(line), new RegExp("account.txt is AppState/cookie-only"));
   }
 });
+
+
+test("account.txt recognizes EAAAA access tokens without treating them as cookies", () => withRoot(root => {
+  const token = "EAAAA" + "A".repeat(64);
+  fs.writeFileSync(path.join(root, "account.txt"), token);
+  const config = loadAccountConfig({ cwd: root, env: {} });
+  assert.deepEqual(config, { mode: "token", accessToken: token, source: "account.txt" });
+  assert.throws(() => parseAccountText(token), /exchanged asynchronously/);
+}));
