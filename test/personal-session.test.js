@@ -9,7 +9,7 @@ const appState = [
   { key: "xs", value: "session-token", domain: ".facebook.com", path: "/", secure: true, httpOnly: true }
 ];
 
-function response({ status = 200, location = null, html = "<html><body>Home</body></html>", setCookies = [] } = {}) {
+function response({ status = 200, location = null, html = '<html><script>{"USER_ID":"123456789012345"}</script><body>Home</body></html>', setCookies = [] } = {}) {
   return {
     status,
     ok: status >= 200 && status < 300,
@@ -125,6 +125,28 @@ test("personal session reports expired AppState on login redirect", async () => 
       fetchImpl: async () => response({ status: 302, location: "https://www.facebook.com/login.php" })
     }),
     error => error.code === "FCA_SESSION_EXPIRED" && error.sessionState === "logged_out"
+  );
+});
+
+test("personal session refuses HTTP 200 pages without a verifiable account identity", async () => {
+  await assert.rejects(
+    createPersonalSession({
+      appState,
+      fetchImpl: async () => response({ html: "<html><body>Generic success page</body></html>" })
+    }),
+    error => error.code === "FCA_SESSION_IDENTITY_UNVERIFIED" &&
+      error.sessionState === "error" && error.retryable === false
+  );
+});
+
+test("personal session rejects a different account identity even when HTTP 200", async () => {
+  await assert.rejects(
+    createPersonalSession({
+      appState,
+      fetchImpl: async () => response({ html: '<html><script>{"USER_ID":"999999999999999"}</script>Home</html>' })
+    }),
+    error => error.code === "FCA_SESSION_IDENTITY_MISMATCH" &&
+      error.sessionState === "error" && error.retryable === false
   );
 });
 
@@ -245,7 +267,7 @@ test("personal session refreshes fb_dtsg and returns only non-secret token metad
 });
 
 test("personal session restores an account-bound AppState and rolls back a mismatched identity", async () => {
-  const html = '<html><input type="hidden" name="fb_dtsg" value="fresh-token"></html>';
+  const html = '<html><script>{"USER_ID":"123456789012345"}</script><input type="hidden" name="fb_dtsg" value="fresh-token"></html>';
   const session = await createPersonalSession({ appState, fetchImpl: async () => response({ html }) });
   const replacement = [
     ...appState,

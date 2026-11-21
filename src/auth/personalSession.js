@@ -289,7 +289,14 @@ async function createPersonalSession({
     const pageUserId = extractIdentity(html);
     let pageTokens = extractFacebookTokens(html);
     const realtime = extractRealtimeConfig(html);
-    if (pageUserId && pageUserId !== userId) {
+    if (!pageUserId) {
+      throw sessionError(
+        "Facebook returned a page without verifiable account identity; refusing to treat the AppState as active",
+        "FCA_SESSION_IDENTITY_UNVERIFIED",
+        "error"
+      );
+    }
+    if (pageUserId !== userId) {
       throw sessionError("Facebook returned a different account than the supplied c_user session", "FCA_SESSION_IDENTITY_MISMATCH", "error");
     }
 
