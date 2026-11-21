@@ -41,7 +41,7 @@ function normalizeCookies(input) {
         expires = Math.floor(timestamp / 1000);
       } else if (typeof expiryInput === "number" && Number.isFinite(expiryInput) && expiryInput >= 0) {
         expires = Math.floor(expiryInput >= 1e12 ? expiryInput / 1000 : expiryInput);
-      } else if (typeof expiryInput === "string" && /^\\d+$/.test(expiryInput)) {
+      } else if (typeof expiryInput === "string" && /^\d+$/.test(expiryInput)) {
         const timestamp = Number(expiryInput);
         if (!Number.isSafeInteger(timestamp)) throw new TypeError("Invalid cookie expiry");
         expires = Math.floor(timestamp >= 1e12 ? timestamp / 1000 : timestamp);
