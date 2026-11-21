@@ -19,6 +19,7 @@ const { normalizeFacebookResponse, stripFacebookJsonPrefix, createFacebookError 
 const { createFacebookWebClient, assertFacebookUrl, toFormBody } = require("./src/auth/facebookWebClient");
 const { createClient } = require("./src/api/client");
 const { createGoatBotLogin } = require("./src/compat/goatbotLogin");
+const { createFcaLogin } = require("./src/compat/fcaLogin");
 const { createFcaClient } = require("./src/compat/namespacedClient");
 const { MessengerBot, createMessengerBot } = require("./src/compat/messengerBot");
 const { createFacebookMqttClient } = require("./src/compat/facebookMqttClient");
@@ -44,6 +45,9 @@ const { createFacebookThreadApi, DOC_IDS: FACEBOOK_THREAD_DOC_IDS } = require(".
 const { parseVersion, compareVersions, verifyUpdateManifest, verifyArtifactDigest } = require("./src/update/manifest");
 const { MAX_IMAGE_UPLOAD_BYTES, MAX_ATTACHMENT_UPLOAD_BYTES, MAX_ATTACHMENT_DOWNLOAD_BYTES, MAX_ATTACHMENT_COUNT, readImageInput, readAttachmentInput, downloadAttachment, safeDownloadUrl } = require("./src/compat/imageUpload");
 
+// EryXen-style package-level login API; the factory remains available for isolated clients.
+const defaultFcaLogin = createFcaLogin();
+
 module.exports = {
   normalizeCookies, validateSessionCookies, parseCookieHeader, parseNetscapeCookies,
   redactSecrets, createDiagnosticRecorder, classifySessionState, describeError, encryptSession, decryptSession,
@@ -53,7 +57,9 @@ module.exports = {
   parseAccountText, loadAccountConfig, generateTotp,
   normalizeFacebookResponse, stripFacebookJsonPrefix, createFacebookError,
   createFacebookWebClient, assertFacebookUrl, toFormBody, createClient,
-  createGoatBotLogin, createFcaClient, MessengerBot, createMessengerBot, createFacebookMqttClient, createLegacyFcaProvider, verifyLicenseToken, createLicenseProvider,
+  createGoatBotLogin, createFcaLogin, login: defaultFcaLogin.login, logout: defaultFcaLogin.logout,
+  getConnectionState: defaultFcaLogin.getConnectionState, getLicense: defaultFcaLogin.getLicense,
+  createFcaClient, MessengerBot, createMessengerBot, createFacebookMqttClient, createLegacyFcaProvider, verifyLicenseToken, createLicenseProvider,
   validateTransportDriver, createTransportFactory, createMetaMessengerTransport,
   normalizeWebhookPayload, verifyWebhookSignature, verifyWebhookChallenge,
   decodeRealtimeFrame, summarizeRealtimeFrame, DEFAULT_MAX_FRAME_BYTES,

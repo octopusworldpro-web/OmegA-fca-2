@@ -51,6 +51,7 @@ OmegA-FCA is the Facebook integration library maintained under the **OmegA Bot**
 | [Deployment](docs/DEPLOYMENT.md) | Setup and test instructions |
 | [E2EE](docs/E2EE.md) | Experimental encrypted messaging notes |
 | [TypeScript](docs/TYPESCRIPT.md) | Types and package exports |
+| [EryXen-compatible login](docs/ERYXEN-COMPATIBLE-LOGIN.md) | Callback and Promise login entry point |
 
 > **Quick install**
 > ```bash

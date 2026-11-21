@@ -53,7 +53,8 @@
     "THIRD_PARTY_NOTICES.md",
     "docs/E2EE.md",
     "docs/TYPESCRIPT.md",
-    "docs/PRERELEASE-PUBLISHING.md"
+    "docs/PRERELEASE-PUBLISHING.md",
+    "docs/ERYXEN-COMPATIBLE-LOGIN.md"
   ],
   "exports": {
     ".": {

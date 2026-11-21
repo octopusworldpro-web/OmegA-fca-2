@@ -562,3 +562,29 @@ export interface MessengerBotContext {
   send(message: string | Record<string, unknown>, callback?: (error: Error | null, result?: unknown) => void): Promise<unknown> | void;
 }
 export function createMessengerBot(credentials: { appState: Cookie[] } | { mode: "appstate"; appState: Cookie[] } | { mode: "session" }, options?: Record<string, unknown>): Promise<MessengerBot>;
+
+
+/** Error-first callback used by the EryXen-compatible package-level login API. */
+export type FcaLoginCallback = (error: Error | null, api?: FcaApi) => void;
+export type FcaLoginCredentials = { appState: Cookie[] } | { mode: "session" } | Record<string, never>;
+export interface FcaApi extends TransportDriver {
+  getCurrentUserID(): string | number | null;
+  listenMqtt(callback: (error: Error | null, event?: unknown) => void): (() => void) | void;
+  stopListening?(callback?: () => void): boolean | void;
+  sessionGuard?(path?: string, options?: { interval?: number; debounce?: number }): unknown;
+  stopSessionGuard?(): Promise<boolean> | boolean;
+}
+export interface FcaLoginController {
+  /** Supports login({ appState }, options, callback), login({ appState }, callback), and Promise use. */
+  login(credentials?: FcaLoginCredentials, options?: Record<string, unknown>, callback?: FcaLoginCallback): Promise<FcaApi | null>;
+  logout(callback?: (error?: Error | null) => void): Promise<void> | void;
+  getConnectionState(): ConnectionSnapshot;
+  getLicense(): VerifiedLicense | null;
+}
+/** Creates an isolated EryXen-style FCA login controller; client may be injected for adapters/tests. */
+export function createFcaLogin(options?: FacebookMqttClientOptions & { client?: ReturnType<typeof createClient> }): FcaLoginController;
+/** Default package-level FCA login entry point, compatible with login({ appState }, options, callback). */
+export function login(credentials?: FcaLoginCredentials, options?: Record<string, unknown>, callback?: FcaLoginCallback): Promise<FcaApi | null>;
+export function logout(callback?: (error?: Error | null) => void): Promise<void> | void;
+export function getConnectionState(): ConnectionSnapshot;
+export function getLicense(): VerifiedLicense | null;
