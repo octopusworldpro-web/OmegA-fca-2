@@ -48,3 +48,33 @@ test("Netscape import rejects malformed expiry fields instead of treating them a
   ].join("\n");
   assert.throws(() => parseNetscapeCookies(malformed), /Invalid cookie expiry/);
 });
+
+
+test("EryXen AppState metadata accepts Infinity session expiry and tough-cookie dates", () => {
+  const { validateSessionCookies } = require("../src/security/cookies");
+  const cookies = validateSessionCookies([
+    {
+      key: "c_user", value: "123456789", domain: ".facebook.com", path: "/",
+      expires: "Infinity", creation: new Date("2026-01-01T00:00:00Z"),
+      lastAccessed: new Date("2026-01-02T00:00:00Z"), secure: true, httpOnly: true
+    },
+    {
+      key: "xs", value: "session-token", domain: ".facebook.com", path: "/",
+      expires: new Date("2030-01-01T00:00:00Z"), creation: new Date(),
+      lastAccessed: new Date(), secure: true, httpOnly: true
+    }
+  ]);
+  assert.equal(cookies[0].expires, undefined);
+  assert.equal(cookies[1].expires, Math.floor(Date.parse("2030-01-01T00:00:00Z") / 1000));
+  assert.equal(cookies[0].httpOnly, true);
+  assert.equal(cookies[1].secure, true);
+});
+
+test("browser expirationDate milliseconds are normalized to Unix seconds", () => {
+  const { normalizeCookies } = require("../src/security/cookies");
+  const cookie = normalizeCookies([{
+    key: "sid", value: "session", domain: ".facebook.com",
+    expirationDate: 1_893_456_000_000
+  }])[0];
+  assert.equal(cookie.expires, 1_893_456_000);
+});

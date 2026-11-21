@@ -27,10 +27,28 @@ function normalizeCookies(input) {
     const domain = normalizeDomain(rawDomain);
     const path = item.path === undefined ? "/" : item.path;
     if (typeof path !== "string" || !path.startsWith("/") || path.length > 1024) throw new TypeError("Invalid cookie path");
-    const expires = item.expires === undefined || item.expires === null || item.expires === 0
-      ? null : item.expires;
-    if (expires !== null && (!Number.isSafeInteger(expires) || expires < 0)) {
-      throw new TypeError("Invalid cookie expiry");
+    // EryXen/tough-cookie AppState exports Date objects and the string
+    // "Infinity" for session cookies. Browser exports commonly use
+    // expirationDate in seconds or milliseconds. Normalize all supported
+    // forms to Unix seconds; session cookies omit expiry metadata.
+    const expiryInput = item.expires !== undefined ? item.expires : item.expirationDate;
+    let expires = null;
+    if (expiryInput !== undefined && expiryInput !== null && expiryInput !== 0 &&
+        expiryInput !== "Infinity" && expiryInput !== "Session") {
+      if (expiryInput instanceof Date) {
+        const timestamp = expiryInput.getTime();
+        if (!Number.isFinite(timestamp) || timestamp < 0) throw new TypeError("Invalid cookie expiry");
+        expires = Math.floor(timestamp / 1000);
+      } else if (typeof expiryInput === "number" && Number.isFinite(expiryInput) && expiryInput >= 0) {
+        expires = Math.floor(expiryInput >= 1e12 ? expiryInput / 1000 : expiryInput);
+      } else if (typeof expiryInput === "string" && /^\\d+$/.test(expiryInput)) {
+        const timestamp = Number(expiryInput);
+        if (!Number.isSafeInteger(timestamp)) throw new TypeError("Invalid cookie expiry");
+        expires = Math.floor(timestamp >= 1e12 ? timestamp / 1000 : timestamp);
+      } else {
+        throw new TypeError("Invalid cookie expiry");
+      }
+      if (!Number.isSafeInteger(expires) || expires < 0) throw new TypeError("Invalid cookie expiry");
     }
     const identity = [domain, path, key].join("\n");
     if (seen.has(identity)) throw new TypeError("Duplicate cookie entry");
