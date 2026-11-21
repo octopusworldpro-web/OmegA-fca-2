@@ -28,36 +28,32 @@ test("GoatBot adapter maps AppState and forwards options", async () => {
   assert.deepEqual(callbacks, [{ error: null, value: api }]);
 });
 
-test("GoatBot adapter maps credential aliases without persisting secrets", async () => {
-  let received;
-  const login = createGoatBotLogin({
-    async login(credentials) { received = credentials; return {}; }
-  });
-  await login({
+test("GoatBot adapter rejects credential and 2FA login before calling native client", async () => {
+  let called = false;
+  const login = createGoatBotLogin({ async login() { called = true; return {}; } });
+  let failure;
+  assert.equal(await login({
     email: "owner@example.test",
     pass: "synthetic-password",
     twoFactorSecret: "synthetic-secret",
     twoFactorCode: "123456",
     userAgent: "test-agent",
     proxy: "http://127.0.0.1:8080"
-  }, () => {});
-  assert.deepEqual(received, {
-    mode: "credentials",
-    email: "owner@example.test",
-    password: "synthetic-password",
-    twoFactorSecret: "synthetic-secret",
-    twoFactorCode: "123456",
-    userAgent: "test-agent",
-    proxy: "http://127.0.0.1:8080"
-  });
+  }, error => { failure = error; }), null);
+  assert.equal(failure.code, "FCA_CREDENTIAL_LOGIN_UNSUPPORTED");
+  assert.equal(failure.retryable, false);
+  assert.equal(called, false);
 });
 
-test("GoatBot legacy twoFactorSecretOrCode alias maps to a manual code", async () => {
-  let received;
-  const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } });
-  await login({ email: "owner@example.test", password: "example-password", twoFactorSecretOrCode: "654321" }, () => {});
-  assert.equal(received.twoFactorCode, "654321");
-  assert.equal(received.twoFactorSecret, null);
+test("GoatBot legacy twoFactorSecretOrCode credential login is explicitly unsupported", async () => {
+  const login = createGoatBotLogin({ async login() { throw new Error("must not call native client"); } });
+  let failure;
+  assert.equal(await login({
+    email: "owner@example.test",
+    password: "example-password",
+    twoFactorSecretOrCode: "654321"
+  }, error => { failure = error; }), null);
+  assert.equal(failure.code, "FCA_CREDENTIAL_LOGIN_UNSUPPORTED");
 });
 
 test("GoatBot adapter supports callback as second argument", async () => {
@@ -92,30 +88,54 @@ test("GoatBot adapter never calls a callback twice when the success callback thr
   assert.equal(calls, 1);
 });
 
-test("GoatBot adapter rejects missing callback and reports unsupported login input", async () => {
+test("GoatBot adapter rejects missing callback and unsupported login input", async () => {
   const login = createGoatBotLogin({ login: async () => ({}) });
   assert.throws(() => login({ appState: [] }), /callback is required/);
   let reported;
   assert.equal(await login({ token: "not-supported" }, error => { reported = error; }), null);
+  assert.equal(reported.code, "FCA_LOGIN_INPUT_UNSUPPORTED");
   assert.match(reported.message, /requires AppState, cookies/);
   assert.equal(reported.retryable, false);
 });
 
-test("GoatBot adapter maps FB_USERNAME instead of email", async () => {
+test("GoatBot adapter rejects FB_USERNAME/password instead of attempting unsafe credential login", async () => {
+  let called = false;
+  const login = createGoatBotLogin({ async login() { called = true; return {}; } });
+  let failure;
+  assert.equal(await login({ username: "fb_handle", password: "synthetic-password" }, error => { failure = error; }), null);
+  assert.equal(failure.code, "FCA_CREDENTIAL_LOGIN_UNSUPPORTED");
+  assert.equal(called, false);
+});
+
+
+test("GoatBot adapter converts raw Cookie mode to native AppState login", async () => {
   let received;
-  const login = createGoatBotLogin({
-    async login(credentials) { received = credentials; return {}; }
-  });
-  await login({ username: "fb_handle", password: "synthetic-password" }, () => {});
-  assert.deepEqual(received, {
-    mode: "credentials",
-    username: "fb_handle",
-    password: "synthetic-password",
-    twoFactorSecret: null,
-    twoFactorCode: null,
-    userAgent: null,
-    proxy: null
-  });
+  const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } });
+  await login({ mode: "cookie", cookie: "c_user=123456789; xs=session-cookie" }, () => {});
+  assert.equal(received.mode, "appstate");
+  assert.deepEqual(received.appState.map(cookie => cookie.key), ["c_user", "xs"]);
+});
+
+test("GoatBot adapter supports EryXen uppercase Cookie string, array and object aliases", async () => {
+  for (const Cookie of [
+    "c_user=123456789; xs=session-cookie",
+    ["c_user=123456789", "xs=session-cookie"],
+    { c_user: "123456789", xs: "session-cookie" }
+  ]) {
+    let received;
+    const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } });
+    await login({ Cookie }, () => {});
+    assert.equal(received.mode, "appstate");
+    assert.deepEqual(received.appState.map(cookie => cookie.key), ["c_user", "xs"]);
+  }
+});
+
+test("GoatBot adapter accepts EryXen-style AppState string cookie header", async () => {
+  let received;
+  const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } });
+  await login({ appState: "c_user=123456789; xs=session-cookie" }, () => {});
+  assert.equal(received.mode, "appstate");
+  assert.deepEqual(received.appState.map(cookie => cookie.key), ["c_user", "xs"]);
 });
 
 test("GoatBot adapter rejects credentials stored in account.txt", async () => {
