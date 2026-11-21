@@ -202,11 +202,12 @@ test("GoatBot adapter forwards encrypted SessionGuard restore mode", async () =>
   assert.deepEqual(received, { mode: "session" });
 });
 
-test("GoatBot adapter maps a raw Cookie header to native cookie login", async () => {
+test("GoatBot adapter maps a raw Cookie header to native AppState login", async () => {
   let received;
   const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } });
   await login({ cookie: "c_user=123456789; xs=session-cookie" }, () => {});
-  assert.deepEqual(received, { mode: "cookie", cookie: "c_user=123456789; xs=session-cookie" });
+  assert.equal(received.mode, "appstate");
+  assert.deepEqual(received.appState.map(cookie => cookie.key), ["c_user", "xs"]);
 });
 
 test("GoatBot adapter accepts the cookies array alias used by FCA integrations", async () => {
@@ -292,12 +293,12 @@ test("GoatBot adapter loads an EAAAA token from account.txt and exchanges it", a
   }
 });
 
-test("GoatBot adapter accepts Cookie header aliases", async () => {
+test("GoatBot adapter accepts Cookie header aliases as native AppState", async () => {
   let received;
   const login = createGoatBotLogin({ async login(credentials) { received = credentials; return {}; } });
   await login({ cookieHeader: "c_user=123456789; xs=session-cookie-value" }, () => {});
-  assert.equal(received.mode, "cookie");
-  assert.equal(received.cookie, "c_user=123456789; xs=session-cookie-value");
+  assert.equal(received.mode, "appstate");
+  assert.deepEqual(received.appState.map(cookie => cookie.key), ["c_user", "xs"]);
 });
 
 test("GoatBot adapter reports token exchange failures without leaking the token", async () => {
